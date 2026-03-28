@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import Link from "next/link";
 
@@ -8,29 +8,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [debugMsg, setDebugMsg] = useState(""); // This clears the setDebugMsg error
-
-  useEffect(() => {
-    // Immediate check for Environment Variables
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      setDebugMsg("SETUP ERROR: Supabase URL missing in Vercel.");
-    } else {
-      console.log("Supabase URL is present.");
-    }
-  }, []);
+  const [debugMsg, setDebugMsg] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setDebugMsg("Checking credentials...");
+    setDebugMsg("Attempting login...");
 
     try {
-      // 1. Verify Supabase Client exists
-      if (!supabase) {
-        throw new Error("Supabase client not initialized.");
-      }
-
-      // 2. Attempt Login
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -40,16 +25,11 @@ export default function LoginPage() {
         setDebugMsg(`AUTH ERROR: ${authError.message}`);
         setLoading(false);
       } else if (data?.session) {
-        setDebugMsg("SUCCESS: Session found! Entering dashboard...");
-        // Force browser redirect to ensure middleware picks up the cookie
+        setDebugMsg("SUCCESS! Entering dashboard...");
         window.location.href = '/dashboard';
-      } else {
-        setDebugMsg("ERROR: No session returned. Try re-signing up.");
-        setLoading(false);
       }
     } catch (err: unknown) {
-      // Fixed the 'any' error squiggle
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
       setDebugMsg(`CRASH: ${errorMessage}`);
       setLoading(false);
     }
@@ -66,7 +46,7 @@ export default function LoginPage() {
           <input
             type="email"
             placeholder="EMAIL ADDRESS"
-            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-medium"
+            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 text-sm"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -74,7 +54,7 @@ export default function LoginPage() {
           <input
             type="password"
             placeholder="PASSWORD"
-            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-medium"
+            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 text-sm"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -84,13 +64,13 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full p-4 bg-fuchsia-600 text-white font-black italic rounded-xl hover:bg-white hover:text-black transition-all uppercase tracking-widest disabled:opacity-50"
           >
-            {loading ? "AUTHENTICATING..." : "SIGN IN"}
+            {loading ? "PROCESSING..." : "SIGN IN"}
           </button>
         </form>
 
         {debugMsg && (
           <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
-            <p className="text-[10px] text-center text-fuchsia-400 font-black uppercase tracking-[0.2em] leading-tight">
+            <p className="text-[10px] text-center text-fuchsia-400 font-black uppercase tracking-widest leading-tight">
               {debugMsg}
             </p>
           </div>
