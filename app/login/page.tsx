@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -16,27 +15,37 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     
-    console.log("Login attempt started for:", email);
+    console.log("DEBUG: Login button clicked for", email);
 
     try {
+      // 1. Attempt the actual sign in
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (authError) {
-        console.error("Auth Error:", authError.message);
+        console.error("DEBUG: Supabase returned an error:", authError.message);
         setError(authError.message);
         setLoading(false);
-      } else if (data.user) {
-        console.log("Login successful! Forcing navigation to dashboard...");
-        // Use window.location.href to ensure the session cookies are 
-        // fully processed by the browser before the next page loads.
-        window.location.href = '/dashboard';
+        return;
       }
+
+      if (data?.session) {
+        console.log("DEBUG: Session found! Token exists.");
+        console.log("DEBUG: Forcing hard redirect to /dashboard...");
+        
+        // 2. Force the browser to jump to the dashboard immediately
+        window.location.assign('/dashboard');
+      } else {
+        console.error("DEBUG: No error, but no session returned either.");
+        setError("Session failed to initialize. Try again.");
+        setLoading(false);
+      }
+
     } catch (err) {
-      console.error("Unexpected crash during login:", err);
-      setError("A connection error occurred. Please try again.");
+      console.error("DEBUG: The code crashed entirely:", err);
+      setError("Network or Code Crash. Check Console (F12).");
       setLoading(false);
     }
   };
@@ -66,18 +75,16 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full p-4 bg-fuchsia-600 text-white font-black italic rounded-xl hover:bg-white hover:text-black transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full p-4 bg-fuchsia-600 text-white font-black italic rounded-xl hover:bg-white hover:text-black transition-all uppercase tracking-widest disabled:opacity-50"
           >
-            {loading ? "AUTHENTICATING..." : "SIGN IN"}
+            {loading ? "CHECKING CREDENTIALS..." : "SIGN IN"}
           </button>
         </form>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 p-3 rounded-lg">
-            <p className="text-[10px] text-center text-red-500 font-black uppercase tracking-tighter">
-              {error}
-            </p>
-          </div>
+          <p className="text-[10px] text-center text-red-500 font-black uppercase bg-red-500/10 p-2 rounded border border-red-500/20">
+            {error}
+          </p>
         )}
 
         <p className="text-center text-xs text-zinc-500 font-bold uppercase tracking-widest">
