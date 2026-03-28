@@ -10,6 +10,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,16 +20,13 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        // This must match your Supabase Redirect URL settings
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
     });
 
     if (error) {
       setMessage(error.message);
     } else {
-      setMessage("Check your email for the confirmation link!");
+      setMessage("Account created! Redirecting to login...");
+      setTimeout(() => router.push("/login"), 2000);
     }
     setLoading(false);
   };
@@ -42,7 +40,7 @@ export default function SignupPage() {
           <input
             type="email"
             placeholder="EMAIL ADDRESS"
-            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-bold uppercase"
+            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-bold"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -50,7 +48,7 @@ export default function SignupPage() {
           <input
             type="password"
             placeholder="PASSWORD"
-            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-bold uppercase"
+            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-bold"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -64,7 +62,7 @@ export default function SignupPage() {
           </button>
         </form>
 
-        {message && <p className="text-xs text-center text-zinc-400 font-bold uppercase tracking-tight">{message}</p>}
+        {message && <p className="text-xs text-center text-fuchsia-500 font-bold uppercase tracking-tight">{message}</p>}
 
         <p className="text-center text-xs text-zinc-500 font-bold uppercase tracking-widest">
           Already a member? <Link href="/login" className="text-white hover:text-fuchsia-500 underline underline-offset-4">Login</Link>
