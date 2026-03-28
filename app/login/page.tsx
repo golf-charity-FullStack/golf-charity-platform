@@ -2,35 +2,37 @@
 
 import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [debugMsg, setDebugMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setDebugMsg("Attempting login...");
+    setErrorMsg("");
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) {
-        setDebugMsg(`AUTH ERROR: ${authError.message}`);
+      if (error) {
+        setErrorMsg(error.message);
         setLoading(false);
-      } else if (data?.session) {
-        setDebugMsg("SUCCESS! Entering dashboard...");
-        window.location.href = '/dashboard';
+      } else {
+        // SUCCESS: Refresh server state to recognize the new cookie, then redirect
+        router.refresh();
+        router.push('/dashboard');
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
-      setDebugMsg(`CRASH: ${errorMessage}`);
+      setErrorMsg("An unexpected network error occurred.");
       setLoading(false);
     }
   };
@@ -64,14 +66,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full p-4 bg-fuchsia-600 text-white font-black italic rounded-xl hover:bg-white hover:text-black transition-all uppercase tracking-widest disabled:opacity-50"
           >
-            {loading ? "PROCESSING..." : "SIGN IN"}
+            {loading ? "AUTHENTICATING..." : "SIGN IN"}
           </button>
         </form>
 
-        {debugMsg && (
-          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
-            <p className="text-[10px] text-center text-fuchsia-400 font-black uppercase tracking-widest leading-tight">
-              {debugMsg}
+        {errorMsg && (
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+            <p className="text-[10px] text-center text-red-500 font-black uppercase tracking-widest leading-tight">
+              {errorMsg}
             </p>
           </div>
         )}
