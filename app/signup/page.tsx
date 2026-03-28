@@ -20,6 +20,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
+        // This must match your Supabase Redirect URL settings
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
