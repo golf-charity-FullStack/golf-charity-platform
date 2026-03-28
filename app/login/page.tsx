@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import Link from "next/link";
 
@@ -8,58 +8,65 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [debugMsg, setDebugMsg] = useState(""); // This clears the setDebugMsg error
+
+  useEffect(() => {
+    // Immediate check for Environment Variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      setDebugMsg("SETUP ERROR: Supabase URL missing in Vercel.");
+    } else {
+      console.log("Supabase URL is present.");
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    
-    console.log("DEBUG: Login button clicked for", email);
+    setDebugMsg("Checking credentials...");
 
     try {
-      // 1. Attempt the actual sign in
+      // 1. Verify Supabase Client exists
+      if (!supabase) {
+        throw new Error("Supabase client not initialized.");
+      }
+
+      // 2. Attempt Login
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (authError) {
-        console.error("DEBUG: Supabase returned an error:", authError.message);
-        setError(authError.message);
+        setDebugMsg(`AUTH ERROR: ${authError.message}`);
         setLoading(false);
-        return;
-      }
-
-      if (data?.session) {
-        console.log("DEBUG: Session found! Token exists.");
-        console.log("DEBUG: Forcing hard redirect to /dashboard...");
-        
-        // 2. Force the browser to jump to the dashboard immediately
-        window.location.assign('/dashboard');
+      } else if (data?.session) {
+        setDebugMsg("SUCCESS: Session found! Entering dashboard...");
+        // Force browser redirect to ensure middleware picks up the cookie
+        window.location.href = '/dashboard';
       } else {
-        console.error("DEBUG: No error, but no session returned either.");
-        setError("Session failed to initialize. Try again.");
+        setDebugMsg("ERROR: No session returned. Try re-signing up.");
         setLoading(false);
       }
-
-    } catch (err) {
-      console.error("DEBUG: The code crashed entirely:", err);
-      setError("Network or Code Crash. Check Console (F12).");
+    } catch (err: unknown) {
+      // Fixed the 'any' error squiggle
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setDebugMsg(`CRASH: ${errorMessage}`);
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4 font-sans">
       <div className="w-full max-w-md p-10 space-y-8 bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl">
-        <h1 className="text-4xl font-black text-center italic tracking-tighter uppercase">Welcome Back</h1>
+        <h1 className="text-4xl font-black text-center italic tracking-tighter uppercase leading-none">
+          Digital <span className="text-fuchsia-500">Heroes</span>
+        </h1>
         
         <form onSubmit={handleLogin} className="space-y-4">
           <input
             type="email"
             placeholder="EMAIL ADDRESS"
-            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-bold"
+            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-medium"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -67,7 +74,7 @@ export default function LoginPage() {
           <input
             type="password"
             placeholder="PASSWORD"
-            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-bold"
+            className="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:outline-none focus:border-fuchsia-500 transition-colors text-sm font-medium"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -77,18 +84,20 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full p-4 bg-fuchsia-600 text-white font-black italic rounded-xl hover:bg-white hover:text-black transition-all uppercase tracking-widest disabled:opacity-50"
           >
-            {loading ? "CHECKING CREDENTIALS..." : "SIGN IN"}
+            {loading ? "AUTHENTICATING..." : "SIGN IN"}
           </button>
         </form>
 
-        {error && (
-          <p className="text-[10px] text-center text-red-500 font-black uppercase bg-red-500/10 p-2 rounded border border-red-500/20">
-            {error}
-          </p>
+        {debugMsg && (
+          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
+            <p className="text-[10px] text-center text-fuchsia-400 font-black uppercase tracking-[0.2em] leading-tight">
+              {debugMsg}
+            </p>
+          </div>
         )}
 
         <p className="text-center text-xs text-zinc-500 font-bold uppercase tracking-widest">
-          New here? <Link href="/signup" className="text-white hover:text-fuchsia-500 underline underline-offset-4">Join the Club</Link>
+          New here? <Link href="/signup" className="text-white hover:text-fuchsia-500 underline underline-offset-4">Join Club</Link>
         </p>
       </div>
     </div>
