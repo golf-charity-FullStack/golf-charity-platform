@@ -10,24 +10,35 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    
+    console.log("Login attempt started for:", email);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      router.push("/dashboard");
+      if (authError) {
+        console.error("Auth Error:", authError.message);
+        setError(authError.message);
+        setLoading(false);
+      } else if (data.user) {
+        console.log("Login successful! Forcing navigation to dashboard...");
+        // Use window.location.href to ensure the session cookies are 
+        // fully processed by the browser before the next page loads.
+        window.location.href = '/dashboard';
+      }
+    } catch (err) {
+      console.error("Unexpected crash during login:", err);
+      setError("A connection error occurred. Please try again.");
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -55,13 +66,19 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full p-4 bg-fuchsia-600 text-white font-black italic rounded-xl hover:bg-white hover:text-black transition-all uppercase tracking-widest"
+            className="w-full p-4 bg-fuchsia-600 text-white font-black italic rounded-xl hover:bg-white hover:text-black transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "AUTHENTICATING..." : "SIGN IN"}
           </button>
         </form>
 
-        {error && <p className="text-[10px] text-center text-red-500 font-black uppercase tracking-tighter">{error}</p>}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/50 p-3 rounded-lg">
+            <p className="text-[10px] text-center text-red-500 font-black uppercase tracking-tighter">
+              {error}
+            </p>
+          </div>
+        )}
 
         <p className="text-center text-xs text-zinc-500 font-bold uppercase tracking-widest">
           New here? <Link href="/signup" className="text-white hover:text-fuchsia-500 underline underline-offset-4">Join the Club</Link>
