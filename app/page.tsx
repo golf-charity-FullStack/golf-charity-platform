@@ -2,33 +2,39 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient'; // Using @ alias for cleaner imports
+import { supabase } from '../lib/supabaseClient';
 
 export default function LandingPage() {
   const [userCount, setUserCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getStats = async () => {
-      // Fetching count from your profiles table
+    const fetchLiveStats = async () => {
+      // We only select 'id' to get the count, which is faster and safer
       const { count, error } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true });
-      
-      if (!error) setUserCount(count || 0);
+        .select('id', { count: 'exact', head: true });
+
+      if (!error && count !== null) {
+        setUserCount(count);
+      } else if (error) {
+        console.error("Supabase Error:", error.message);
+      }
+      setLoading(false);
     };
-    getStats();
+
+    fetchLiveStats();
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-fuchsia-500">
+    <div className="min-h-screen bg-black text-white selection:bg-fuchsia-500 font-sans">
       <nav className="p-8 flex justify-between items-center max-w-7xl mx-auto">
         <div className="text-2xl font-black italic uppercase tracking-tighter">
           Digital <span className="text-fuchsia-500">Heroes</span>
         </div>
-        <div className="flex gap-8 items-center text-[10px] font-black uppercase italic">
-          <Link href="/login" className="hover:text-fuchsia-400">Sign In</Link>
-          {/* This Link works ONLY if app/signup/page.tsx exists */}
-          <Link href="/signup" className="bg-white text-black px-6 py-2 rounded-full hover:bg-zinc-200 transition-colors">
+        <div className="flex gap-8 items-center text-[10px] font-black uppercase italic tracking-widest">
+          <Link href="/login" className="hover:text-fuchsia-400 transition-colors">Sign In</Link>
+          <Link href="/signup" className="bg-white text-black px-6 py-2 rounded-full hover:bg-fuchsia-500 hover:text-white transition-all">
             Join Club
           </Link>
         </div>
@@ -49,8 +55,12 @@ export default function LandingPage() {
           <Link href="/pricing" className="bg-fuchsia-600 px-12 py-5 rounded-2xl font-black uppercase text-sm italic shadow-2xl hover:scale-105 transition-all">
             Start Now
           </Link>
-          <div className="bg-zinc-900 border border-zinc-800 px-8 py-5 rounded-2xl font-black uppercase text-xs italic text-zinc-400">
-            Live Pool: <span className="text-white ml-2">${(userCount * 19 * 0.5).toFixed(2)}</span>
+          <div className="bg-zinc-900 border border-zinc-800 px-8 py-5 rounded-2xl font-black uppercase text-xs italic min-w-[200px]">
+            {loading ? (
+              <span className="text-zinc-600 animate-pulse uppercase">Syncing Pool...</span>
+            ) : (
+              <p>Live Pool: <span className="text-fuchsia-500 ml-2">${(userCount * 19 * 0.5).toFixed(2)}</span></p>
+            )}
           </div>
         </div>
       </section>
