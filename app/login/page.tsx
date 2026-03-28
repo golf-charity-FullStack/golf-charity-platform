@@ -6,36 +6,38 @@ import { useRouter } from 'next/navigation';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState('');
   const router = useRouter();
 
   const handleAuth = async (type: 'login' | 'signup') => {
-    setLoading(true);
+    setMsg('Processing...');
     const { error } = type === 'login' 
       ? await supabase.auth.signInWithPassword({ email, password })
       : await supabase.auth.signUp({ email, password });
 
     if (error) {
-      alert(error.message);
+      setMsg(error.message);
     } else {
       if (type === 'login') {
         router.push('/dashboard');
-        router.refresh(); // Forces Next.js to check the new auth state
+        router.refresh();
       } else {
-        alert("Check your email for the confirmation link!");
+        setMsg("Check your email to verify!");
       }
     }
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6">
-      <div className="bg-zinc-900 p-10 rounded-[2.5rem] border border-zinc-800 w-full max-w-md">
-        <h1 className="text-3xl font-black italic uppercase text-white mb-8">Digital Heroes</h1>
-        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-4 bg-black border border-zinc-800 rounded-2xl text-white mb-4" />
-        <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-4 bg-black border border-zinc-800 rounded-2xl text-white mb-6" />
-        <button disabled={loading} onClick={() => handleAuth('login')} className="w-full bg-blue-600 py-4 rounded-2xl font-black text-white uppercase mb-3">{loading ? '...' : 'Log In'}</button>
-        <button disabled={loading} onClick={() => handleAuth('signup')} className="w-full bg-zinc-800 py-4 rounded-2xl font-black text-white uppercase text-xs">Create Account</button>
+    <div className="min-h-screen bg-black flex items-center justify-center p-6 text-white font-bold italic uppercase">
+      <div className="bg-zinc-900 p-12 rounded-[3rem] border border-zinc-800 w-full max-w-md shadow-2xl">
+        <h1 className="text-4xl mb-10 tracking-tighter">Digital Heroes</h1>
+        <div className="space-y-4">
+          <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-5 bg-black border border-zinc-800 rounded-3xl" />
+          <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-5 bg-black border border-zinc-800 rounded-3xl" />
+          <button onClick={() => handleAuth('login')} className="w-full bg-blue-600 py-5 rounded-3xl tracking-tighter shadow-lg">Log In</button>
+          <button onClick={() => handleAuth('signup')} className="w-full bg-zinc-800 py-5 rounded-3xl text-[10px] tracking-widest">Create Account</button>
+          {msg && <p className="text-center text-fuchsia-400 text-[10px] mt-4">{msg}</p>}
+        </div>
       </div>
     </div>
   );
